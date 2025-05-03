@@ -40,14 +40,27 @@ func OpenAndParseH264(filePath string) error {
 	// ... 实现解析 NAL units 的代码 ...
 	reader := AnnexBReader{}
 	nalu := Nalu{}
+	ebsp := EBSP{}
+	rbsp := RBSP{}
 	leftLen := n
-
+	frame := 0
 	for {
+		frame++
+
 		nalu, err = reader.ReadNalu(buffer[(n-leftLen):], leftLen)
 		if err != nil {
 			break
 		}
-		fmt.Printf("nalu data len: %d\n", len(nalu.data))
+		ebsp = nalu.GetEBSP()
+		rbsp = ebsp.GetRBSP()
+		nalu.SetNaluType(NaluType(rbsp.data[0] & 0x1F))
+		nalu.SetForbiddenBit(int(rbsp.data[0] >> 7 & 0x01))
+		nalu.SetNalRefIdc(NalRefIdc(rbsp.data[0] >> 5 & 0x11))
+
+		//fmt.Printf("nalu data len: %d, ebsp data len: %d, rbsp data len: %d\n", len(nalu.data), len(ebsp.data), len(rbsp.data))
+		if nalu.GetNaluType() == NALU_TYPE_SEI {
+			fmt.Printf("frame: %d, nalu data len: %d, nalu type : %s, nal_ref_idc:%s\n", frame, len(nalu.data), nalu.GetNaluType(), nalu.GetNalRefIdc())
+		}
 		leftLen -= len(nalu.data)
 	}
 

@@ -9,7 +9,7 @@ type AnnexBReader struct {
 
 func (reader *AnnexBReader) ReadNalu(data []byte, len int) (Nalu, error) {
 	nalu := Nalu{}
-	fmt.Println("ReadNalu")
+	// fmt.Println("ReadNalu")
 
 	startCodeLen, err := reader.checkStartCode(data, len)
 	if err != nil {
