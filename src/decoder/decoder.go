@@ -40,8 +40,6 @@ func OpenAndParseH264(filePath string) error {
 	// ... 实现解析 NAL units 的代码 ...
 	reader := AnnexBReader{}
 	nalu := Nalu{}
-	ebsp := EBSP{}
-	rbsp := RBSP{}
 	leftLen := n
 	frame := 0
 	for {
@@ -51,15 +49,20 @@ func OpenAndParseH264(filePath string) error {
 		if err != nil {
 			break
 		}
-		ebsp = nalu.GetEBSP()
-		rbsp = ebsp.GetRBSP()
-		nalu.SetNaluType(NaluType(rbsp.data[0] & 0x1F))
-		nalu.SetForbiddenBit(int(rbsp.data[0] >> 7 & 0x01))
-		nalu.SetNalRefIdc(NalRefIdc(rbsp.data[0] >> 5 & 0x11))
+		nalu.ParseEBSP()
+		nalu.ParseRBSP()
+		nalu.SetNaluType(NaluType(nalu.rbsp[0] & 0x1F))
+		nalu.SetForbiddenBit(int(nalu.rbsp[0] >> 7 & 0x01))
+		nalu.SetNalRefIdc(NalRefIdc(nalu.rbsp[0] >> 5 & 0x11))
 
-		//fmt.Printf("nalu data len: %d, ebsp data len: %d, rbsp data len: %d\n", len(nalu.data), len(ebsp.data), len(rbsp.data))
-		if nalu.GetNaluType() == NALU_TYPE_SEI {
-			fmt.Printf("frame: %d, nalu data len: %d, nalu type : %s, nal_ref_idc:%s\n", frame, len(nalu.data), nalu.GetNaluType(), nalu.GetNalRefIdc())
+		// fmt.Printf("nalu data len: %d, ebsp data len: %d, rbsp data len: %d\n", len(nalu.data), len(nalu.ebsp), len(nalu.rbsp))
+		// if nalu.GetNaluType() == NALU_TYPE_PPS {
+		// fmt.Printf("frame: %d, nalu data len: %d, nalu type : %s, nal_ref_idc:%s\n", frame, len(nalu.data), nalu.GetNaluType(), nalu.GetNalRefIdc())
+		// }
+		switch nalu.GetNaluType() {
+		case NALU_TYPE_SPS:
+			sps := SPS{nalu: nalu}
+			sps.Parse()
 		}
 		leftLen -= len(nalu.data)
 	}

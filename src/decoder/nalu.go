@@ -62,6 +62,10 @@ type Nalu struct {
 	forbidden_bit  int
 	nal_ref_idc    NalRefIdc
 	data           []byte
+
+	ebsp []byte // EBSP: nalu 去除startcode
+	rbsp []byte // RBSP: EBSP 去除防竞争码
+	sodp []byte
 }
 
 func (n *Nalu) GetNaluType() NaluType {
@@ -99,8 +103,23 @@ func (n *Nalu) SetData(data []byte, len int) {
 	return
 }
 
-func (n *Nalu) GetEBSP() EBSP {
-	ebsp := EBSP{}
-	ebsp.SetData(n.data[n.startCodeLen:], len(n.data)-n.startCodeLen)
-	return ebsp
+func (n *Nalu) ParseEBSP() {
+	n.ebsp = n.data[n.startCodeLen:]
+}
+
+func (n *Nalu) ParseRBSP() {
+	buffer := make([]byte, len(n.ebsp))
+	copylen := 0
+	len := len(n.ebsp)
+	for i := 0; i < len; i++ {
+		if n.ebsp[i] == 0x03 && i > 2 && i < len-1 {
+			if n.ebsp[i-1] == 0x00 && n.ebsp[i-2] == 0x00 && (n.ebsp[i+1] == 0x00 || n.ebsp[i+1] == 0x01 || n.ebsp[i+1] == 0x02 || n.ebsp[i+1] == 0x03) {
+				continue
+			}
+		}
+		buffer[i] = n.ebsp[i]
+		copylen++
+	}
+
+	n.rbsp = buffer[:copylen]
 }

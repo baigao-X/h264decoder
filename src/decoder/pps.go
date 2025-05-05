@@ -1,4 +1,4 @@
 package decoder
 
-type SODP struct {
+type PPS struct {
 }
